@@ -103,36 +103,39 @@ export function Step2(props) {
 
 // === UPDATED: StepAdhesive is now responsive ===
 export function StepAdhesive(props) {
-  const { adhesiveThickness, setAdhesiveThickness, errors, prevStep, buttonText = 'Dalej', onNext } = props;
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const { adhesiveThickness, setAdhesiveThickness, errors, prevStep, onNext } = props;
 
-  const handleChange = (event, value) => setAdhesiveThickness(value);
-
-  const desktopMarks = [
-    { value: 10, label: '10mm' }, { value: 20, label: '20mm' }, { value: 30, label: '30mm' },
-    { value: 40, label: '40mm' }, { value: 50, label: '50mm' },
-  ];
-  const mobileMarks = [
-    { value: 10 }, { value: 20 }, { value: 30 }, { value: 40 }, { value: 50 },
-  ];
+  const handleChange = (e, value) => setAdhesiveThickness(value);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: { xs: 1, sm: 2 } }}>
-      <Typography variant="body1" align="center" sx={{ mb: -1 }}>Grubość warstwy kleju: {adhesiveThickness} mm</Typography>
-      <Slider
-        value={adhesiveThickness}
-        onChange={handleChange}
-        valueLabelDisplay="auto"
-        min={10}
-        max={50}
-        step={5}
-        marks={isSmallScreen ? mobileMarks : desktopMarks}
-      />
-      {errors.adhesiveThickness && <Typography color="error" variant="caption">{errors.adhesiveThickness}</Typography>}
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="subtitle1">Grubość warstwy kleju + tynku</Typography>
+      <Box sx={{ px: 2 }}>
+        <Slider
+          value={adhesiveThickness}
+          onChange={handleChange}
+          min={10}
+          max={50}
+          step={10}
+          marks={[
+            { value: 10, label: '10 mm' },
+            { value: 20, label: '20 mm' },
+            { value: 30, label: '30 mm' },
+            { value: 40, label: '40 mm' },
+            { value: 50, label: '50 mm' },
+          ]}
+          valueLabelDisplay="on"
+        />
+      </Box>
+      {errors.adhesiveThickness && <Typography color="error">{errors.adhesiveThickness}</Typography>}
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mt: 2 }}>
-        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={prevStep} sx={{ width: { xs: '100%', sm: 'auto' } }}>Wstecz</Button>
-        <Button variant="contained" onClick={onNext} endIcon={<ArrowForwardIcon />} sx={{ width: { xs: '100%', sm: 'auto' } }}>{buttonText}</Button>
+        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={prevStep}>
+          Wstecz
+        </Button>
+        <Button variant="contained" onClick={onNext} endIcon={<ArrowForwardIcon />}>
+          Pokaż rekomendacje
+        </Button>
       </Box>
     </Box>
   );
