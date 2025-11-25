@@ -153,113 +153,80 @@ function App() {
       .catch((err) => { console.error('Błąd EmailJS:', err); });
   };
 
-  // ====== FINAL calculateLa WITH PRIORITY BOOST ======
   const calculateLa = () => {
-    if (!validateStep(4)) return;
+    const { substrate, insulationType, hD, adhesiveThickness, recessedDepth } = formData;
+    const isRecessed = recessedDepth > 0;
 
-    const insulation_thickness = formData.hD;
-    const recessed_depth = formData.recessedDepth;
-    const substrate = formData.substrate;
-    const adhesiveThickness = formData.adhesiveThickness;
+    // Validation
+    if (isRecessed && recessedDepth >= hD) {
+      setErrors({ global: 'Głębokość zaślepki nie może być większa lub równa grubości izolacji!' });
+      setRecommendations([]);
+      return;
+    }
+    if (isRecessed && hD - recessedDepth < 20) {
+      setErrors({ global: 'Pozostała grubość izolacji musi wynosić min. 20 mm!' });
+      setRecommendations([]);
+      return;
+    }
+
+    const validModels = models
+      .filter(m => m.categories.includes(substrate))
+      .filter(m => insulationType !== 'MW' || m.hasMetalPin);
 
     const recommendations = [];
 
-    for (let i = 0; i < models.length; i++) {
-      const model = models[i];
+    validModels.forEach(model => {
+      const hef = model.hef[substrate];
+      if (!hef) return;
 
-      if (!model.categories.includes(substrate)) continue;
+      let requiredLength;
 
-      let hef = 0;
-      if (typeof model.hef === 'object' && model.hef !== null) {
-        if (model.hef.hasOwnProperty(substrate)) {
-          hef = model.hef[substrate];
-        } else {
-          continue;
-        }
+      if (model.calculateRequired) {
+        requiredLength = model.calculateRequired({
+          hD,
+          adhesiveThickness,
+          recessedDepth,
+          isRecessed,
+        });
+        if (requiredLength === null) return;
       } else {
-        hef = model.hef;
+        requiredLength = hD + adhesiveThickness - recessedDepth;
       }
 
-      let adjustment = 0;
-      if (
-        model.adjustments &&
-        model.adjustments.adhesiveThickness &&
-        model.adjustments.adhesiveThickness.modifier !== undefined
-      ) {
-        adjustment = model.adjustments.adhesiveThickness.modifier;
+      const total = requiredLength + hef;
+      const suggested = model.availableLengths
+        .filter(l => l >= total)
+        .sort((a, b) => a - b)[0];
+
+      if (suggested) {
+        recommendations.push({
+          name: model.name,
+          laRecommended: suggested,
+          material: model.material,
+          pdfLink: model.pdfLink,
+          image: model.image,
+          imageAlt: model.imageAlt,
+          priority: model.name === 'LXK 10 H' ? 1 : 0,
+          calculationNote: model.name === 'LXK 10 H'
+            ? isRecessed
+              ? `Pozostała izolacja: ${hD - recessedDepth} mm + hₑ𝒻=${hef} mm`
+              : `${hD} mm + klej ${adhesiveThickness} mm + hₑ𝒻=${hef} mm`
+            : undefined,
+        });
       }
-
-      const effective_insulation = insulation_thickness - recessed_depth;
-      const L_min = effective_insulation + hef + adjustment;
-
-      let laRecommended = null;
-      for (let j = 0; j < model.availableLengths.length; j++) {
-        const length = model.availableLengths[j];
-        if (length >= L_min) {
-          laRecommended = length;
-          break;
-        }
-      }
-
-      if (laRecommended === null) continue;
-
-      if (model.name === 'LXK 10 H' && laRecommended <= 149) {
-        continue;
-      }
-
-      // PRIORITY BOOST: Check if any rule matches
-      let priority = 0;
-      let priorityLabel = null;
-      if (model.priorityRules && model.priorityRules.length > 0) {
-        for (let k = 0; k < model.priorityRules.length; k++) {
-          const rule = model.priorityRules[k];
-          if (rule.condition(formData)) {
-            priority = 1;
-            priorityLabel = rule.label;
-            break;
-          }
-        }
-      }
-
-      recommendations.push({
-        name: model.name,
-        laRecommended: laRecommended,
-        material: model.material,
-        hef: hef,
-        pdfLink: model.pdfLink || null,
-        priority: priority,
-        priorityLabel: priorityLabel,
-      });
-    }
-
-    // SORT: Priority first, then length
-    recommendations.sort((a, b) => {
-      if (a.priority !== b.priority) return b.priority - a.priority;
-      return a.laRecommended - b.laRecommended;
     });
 
-    setRecommendations(recommendations);
+    recommendations.sort((a, b) => b.priority - a.priority || a.laRecommended - b.laRecommended);
 
-    if (recommendations.length > 0 && email) {
+    setRecommendations(recommendations);
+    setErrors(recommendations.length === 0 ? { global: 'Brak pasujących łączników dla podanych parametrów.' } : {});
+
+    if (recommendations.length > 0) {
       sendEmail(recommendations);
     }
 
-    const statsPayload = {
-      substrate: substrate,
-      insulation_type: formData.insulationType,
-      insulation_thickness: insulation_thickness,
-      adhesive_thickness: adhesiveThickness,
-      recessed_depth: recessed_depth,
-      recommendations: recommendations.map(r => ({ name: r.name, la: r.laRecommended })),
-      email: email || null
-    };
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'SF_STATS', payload: statsPayload }, '*');
-    }
-
-    setStep(5);
+    setStep(prev => prev + 1);
   };
-  // ===============================================
 
   const nextStep = () => { if (validateStep(step)) setStep(prev => prev + 1); };
   const prevStep = () => { setStep(prev => prev - 1); };
