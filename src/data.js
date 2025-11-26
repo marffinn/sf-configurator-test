@@ -97,11 +97,11 @@ export const models = [
 ];
 
 export const substrates = [
-  { value: 'A', label: 'Beton zwykły (C12/15 do C50/60)' },
-  { value: 'B', label: 'Cegła pełna (ceramiczna/silikatowa)' },
-  { value: 'C', label: 'Cegła perforowana/kanałowa (Porotherm 25, 17 mm)' },
-  { value: 'D', label: 'Beton na kruszywie lekkim (LAC)' },
-  { value: 'E', label: 'Beton komórkowy (AAC)' },
+  { value: 'A', label: '(A) Beton zwykły (C12/15 do C50/60)' },
+  { value: 'B', label: '(B) Cegła pełna (ceramiczna/silikatowa)' },
+  { value: 'C', label: '(C) Cegła perforowana/kanałowa (Porotherm 25, 17 mm)' },
+  { value: 'D', label: '(D) Beton na kruszywie lekkim (LAC)' },
+  { value: 'E', label: '(E) Beton komórkowy (AAC)' },
 ];
 
 export const insulationTypes = [

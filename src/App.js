@@ -188,7 +188,6 @@ function App() {
           <th>Nazwa</th>
           <th>Zalecana długość (mm)</th>
           <th>Materiał</th>
-          <th>H<sub>ef</sub> (mm)</th>
         </tr>
       </thead>
       <tbody>
@@ -199,7 +198,6 @@ function App() {
             </td>
             <td style="text-align:center; font-weight:bold;">${rec.laRecommended}</td>
             <td>${rec.material}</td>
-            <td style="text-align:center;">${rec.hef}</td>
           </tr>
         `).join('')}
       </tbody>
