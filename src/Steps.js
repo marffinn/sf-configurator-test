@@ -14,7 +14,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { substrates, insulationTypes } from './data';
 import companyLogo from './logo.png';
 
-console.log('Steps.js loaded – DEBUG MODE ACTIVE');
 
 export function Step0(props) {
   const { substrate, setSubstrate, errors, nextStep } = props;
@@ -199,7 +198,6 @@ export function Step4(props) {
   ];
 
   useEffect(() => {
-    console.log('%c STEP4 RENDERED – RECOMMENDATIONS:', 'color: lime; font-size: 14px; font-weight: bold', recommendations);
     recommendations.forEach((r, i) => {
       console.log(`%c → #${i + 1} ${r.name}`, 'color: yellow', {
         image: r.image,
@@ -211,7 +209,6 @@ export function Step4(props) {
   }, [recommendations]);
 
   const openModal = (rec) => {
-    console.log('OPENING MODAL →', rec.name, 'URL:', rec.image);
     setSelectedImage({ image: rec.image, alt: rec.imageAlt, name: rec.name });
     setModalOpen(true);
   };
