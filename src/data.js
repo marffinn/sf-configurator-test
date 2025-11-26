@@ -1,4 +1,3 @@
-// src/data.js  ← Wklej dokładnie to
 const PUBLIC_URL = process.env.PUBLIC_URL || '';
 
 export const models = [
@@ -78,18 +77,23 @@ export const models = [
     pdfLink: 'https://starfix.eu/wp-content/uploads/2021/04/LXK-4-ETA-2021.pdf',
     image: `${PUBLIC_URL}/images/fasteners/lxk-10h.png`,
     imageAlt: 'Łącznik LXK 10 H – do montażu zagłębionego',
-    calculateRequired: ({ hD, adhesiveThickness, recessedDepth, isRecessed }) => {
+
+
+    calculateRequired: ({ grubIzolacji, grubKlej, grubZaslepka, isRecessed }) => {
       if (isRecessed) {
-        if (hD < 120) return null;
-        const remaining = hD - recessedDepth;
+        if (grubIzolacji < 120) return null;
+        const remaining = grubIzolacji - grubZaslepka;
         if (remaining < 100) return null;
         return remaining;
-      } else {
-        if (hD < 100) return null;
-        return hD + adhesiveThickness;
       }
-    },
-  },
+      if (!isRecessed) {
+        if (grubIzolacji < 100) return null;
+        return grubIzolacji + grubKlej;
+      }
+
+      return null;
+    }
+  }
 ];
 
 export const substrates = [

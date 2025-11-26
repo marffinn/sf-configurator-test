@@ -1,9 +1,12 @@
-// src/App.js – FINAL VERSION WITH PRIORITY BOOST + FULL LOGIC
+// src/App.js – PERFECTLY MATCHED TO HTML VERSION
 
 import React, { useState } from 'react';
 import emailjs from 'emailjs-com';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box, Container, Typography, Stepper as MuiStepper, Step, StepLabel, TextField, Button, Switch, FormControlLabel } from '@mui/material';
+import {
+  ThemeProvider, createTheme, CssBaseline, Box, Container, Typography,
+  Stepper as MuiStepper, Step, StepLabel, TextField, Button, Switch,
+  FormControlLabel, Checkbox, FormControl
+} from '@mui/material';
 
 import { models, substrates, insulationTypes } from './data';
 import { Step0, Step1, Step2, StepAdhesive, StepRecessedDepth, Step4 } from './Steps';
@@ -54,6 +57,51 @@ const getTheme = (mode) => createTheme({
   },
 });
 
+function DisclaimerStep({ onAccept }) {
+  const [accepted, setAccepted] = useState(false);
+
+  return (
+    <Box sx={{ maxWidth: 660, mx: 'auto', p: { xs: 2, sm: 4 }, textAlign: 'center' }}>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
+        Ważna informacja
+      </Typography>
+      <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.75, color: 'text.secondary', fontSize: { xs: '1rem', sm: '1.1rem' } }}>
+        Konfigurator to narzędzie pozwalające w prosty sposób, teoretycznie dobrać długość i typ łącznika dla podanych parametrów.
+        Powstały wynik jest wyłącznie rekomendacją i nie zastępuje projektu technicznego oraz wymagań KOT i ETA dla podanych łączników.
+      </Typography>
+
+      <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              color="primary"
+              size="large"
+            />
+          }
+          label={
+            <Typography sx={{ fontWeight: 500, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
+              Zapoznałem/am sie z powyższym i akceptuję.
+            </Typography>
+          }
+        />
+      </FormControl>
+
+      <Button
+        variant="contained"
+        size="large"
+        disabled={!accepted}
+        onClick={onAccept}
+        fullWidth
+        sx={{ height: 56, fontSize: '1.15rem', textTransform: 'none' }}
+      >
+        Przejdź dalej
+      </Button>
+    </Box>
+  );
+}
+
 function EmailStep({ setEmail, nextStep }) {
   const [localEmail, setLocalEmail] = useState('');
   const [error, setError] = useState('');
@@ -72,19 +120,24 @@ function EmailStep({ setEmail, nextStep }) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, p: 3 }}>
-      <Typography variant="h6">Podaj swój adres email, aby kontynuować</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, p: 3, maxWidth: 500, mx: 'auto' }}>
+      <Typography variant="h6" gutterBottom>
+        Podaj swój adres email, aby otrzymać wyniki
+      </Typography>
       <TextField
         label="Email"
         variant="outlined"
+        type="email"
         value={localEmail}
         onChange={(e) => setLocalEmail(e.target.value)}
         onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
         error={!!error}
         helperText={error}
-        sx={{ width: '100%', maxWidth: '400px' }}
+        fullWidth
       />
-      <Button variant="contained" onClick={handleSubmit}>Rozpocznij konfigurację</Button>
+      <Button variant="contained" size="large" onClick={handleSubmit} fullWidth sx={{ height: 56 }}>
+        Kontynuuj
+      </Button>
     </Box>
   );
 }
@@ -92,8 +145,11 @@ function EmailStep({ setEmail, nextStep }) {
 function App() {
   const [themeMode, setThemeMode] = useState('light');
   const theme = getTheme(themeMode);
+
   const [email, setEmail] = useState('');
   const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     substrate: 'A',
@@ -122,107 +178,148 @@ function App() {
   };
 
   const sendEmail = (recommendations) => {
-    const substrateLabel = substrates.find(s => s.value === formData.substrate)?.label;
-    const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label;
+    const substrateLabel = substrates.find(s => s.value === formData.substrate)?.label || '';
+    const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label || '';
 
     const recommendationsHtml = `
-      <table border="1" style="border-collapse: collapse; width: 100%;">
-        <thead>
-          <tr>
-            <th>Nazwa</th><th>Długość (mm)</th><th>Materiał</th><th>Hef (mm)</th>
+    <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:14px;" border="1" cellpadding="10">
+      <thead style="background:#f0f0f0;">
+        <tr>
+          <th>Nazwa</th>
+          <th>Zalecana długość (mm)</th>
+          <th>Materiał</th>
+          <th>H<sub>ef</sub> (mm)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${recommendations.map(rec => `
+          <tr ${rec.name === 'LXK 10 H' ? 'style="background:#fff8e1; font-weight:bold;"' : ''}>
+            <td style="color:${rec.name === 'LXK 10 H' ? '#dd0000' : 'inherit'};">
+              ${rec.name} ${rec.name === 'LXK 10 H' ? ' ← rekomendowany' : ''}
+            </td>
+            <td style="text-align:center; font-weight:bold;">${rec.laRecommended}</td>
+            <td>${rec.material}</td>
+            <td style="text-align:center;">${rec.hef}</td>
           </tr>
-        </thead>
-        <tbody>
-          ${recommendations.map(rec => `
-            <tr>
-              <td>${rec.name}</td><td>${rec.laRecommended}</td><td>${rec.material}</td><td>${rec.hef}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 
     const templateParams = {
-      to_email: email, subject: 'Rekomendacje Łączników ETICS', client_email: email, substrate: substrateLabel,
-      insulationType: insulationTypeLabel, insulationThickness: formData.hD, adhesiveThickness: formData.adhesiveThickness,
-      recessedDepth: formData.recessedDepth === 0 ? 'Brak' : `${formData.recessedDepth} mm`, recommendations_html: recommendationsHtml
+      to_email: email,
+      client_email: email,
+      substrate: substrateLabel,
+      insulationType: insulationTypeLabel,
+      insulationThickness: formData.hD,
+      adhesiveThickness: formData.adhesiveThickness,
+      recessedDepth: formData.recessedDepth === 0 ? 'Brak' : `${formData.recessedDepth} mm`,
+
+      disclaimer_html: `
+      <div style="background:#fff8e1; border-left:5px solid #ff8f00; padding:15px; margin:20px 0; font-size:14px; line-height:1.6;">
+        <strong>Potwierdzenie zapoznania się z warunkami korzystania</strong><br><br>
+        Użytkownik potwierdził, że zapoznał się z następującymi warunkami: <br>
+        • Konfigurator ma charakter wyłącznie orientacyjny i teoretyczny<br>
+        • Wynik jest jedynie rekomendacją i <strong>nie zastępuje projektu technicznego</strong><br>
+        • Wymagana jest weryfikacja przez specjalistę zgodnie z KOT i ETA
+      </div>
+    `,
+
+      recommendations_html: recommendationsHtml,
+
+      timestamp: new Date().toLocaleString('pl-PL', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
     };
 
     emailjs.send('service_wl8dg9a', 'template_jgv00kz', templateParams, 'ndfOyBTYvqBjOwsI_')
-      .then((response) => { console.log('Email wysłany!', response.status, response.text); })
-      .catch((err) => { console.error('Błąd EmailJS:', err); });
+      .then(() => console.log('Email wysłany!'))
+      .catch(err => console.error('EmailJS error:', err));
   };
 
+  // ✅ EXACT LOGIC FROM HTML VERSION (main.js)
   const calculateLa = () => {
     const { substrate, insulationType, hD, adhesiveThickness, recessedDepth } = formData;
     const isRecessed = recessedDepth > 0;
 
-    // Validation
+    // Validation matching HTML version
     if (isRecessed && recessedDepth >= hD) {
-      setErrors({ global: 'Głębokość zaślepki nie może być większa lub równa grubości izolacji!' });
-      setRecommendations([]);
-      return;
-    }
-    if (isRecessed && hD - recessedDepth < 20) {
-      setErrors({ global: 'Pozostała grubość izolacji musi wynosić min. 20 mm!' });
+      setErrors({ global: 'Zaślepka nie może być dłuższa niż izolacja!' });
       setRecommendations([]);
       return;
     }
 
-    const validModels = models
-      .filter(m => m.categories.includes(substrate))
-      .filter(m => insulationType !== 'MW' || m.hasMetalPin);
+    if (isRecessed && (hD - recessedDepth) < 20) {
+      setErrors({ global: 'Zaślepka musi być co najmniej 20 mm krótsza od izolacji!' });
+      setRecommendations([]);
+      return;
+    }
 
-    const recommendations = [];
+    const validModels = models.filter(m => m.categories.includes(substrate));
+    const suggestions = [];
 
     validModels.forEach(model => {
       const hef = model.hef[substrate];
-      if (!hef) return;
 
-      let requiredLength;
+      // Skip if hef is undefined or 0
+      if (hef === undefined || hef === 0) return;
 
-      if (model.calculateRequired) {
-        requiredLength = model.calculateRequired({
-          hD,
-          adhesiveThickness,
-          recessedDepth,
-          isRecessed,
+      // Skip non-metal-pin models for mineral wool
+      if (insulationType === 'MW' && !model.hasMetalPin) return;
+
+      let required;
+
+      // ✅ EXACT LOGIC FROM data.js
+      if (typeof model.calculateRequired === 'function') {
+        // LXK 10 H uses custom function
+        required = model.calculateRequired({
+          grubIzolacji: hD,
+          grubKlej: adhesiveThickness,
+          grubZaslepka: recessedDepth,
+          isRecessed: isRecessed
         });
-        if (requiredLength === null) return;
+
+        if (required === null) return;
       } else {
-        requiredLength = hD + adhesiveThickness - recessedDepth;
+        // ✅ STANDARD MODELS: EXACT FORMULA FROM main.js
+        // required = grubIzolacji + grubKlej - grubZaslepka
+        required = hD + adhesiveThickness - recessedDepth;
       }
 
-      const total = requiredLength + hef;
-      const suggested = model.availableLengths
-        .filter(l => l >= total)
+      const offset = model.offset || 0;
+      const finalRequired = required + offset + hef;
+
+      if (finalRequired <= 0) return;
+
+      // Find smallest available length that fits
+      const available = model.availableLengths
+        .filter(l => l >= finalRequired)
         .sort((a, b) => a - b)[0];
 
-      if (suggested) {
-        recommendations.push({
-          name: model.name,
-          laRecommended: suggested,
-          material: model.material,
-          pdfLink: model.pdfLink,
-          image: model.image,
-          imageAlt: model.imageAlt,
-          priority: model.name === 'LXK 10 H' ? 1 : 0,
-          calculationNote: model.name === 'LXK 10 H'
-            ? isRecessed
-              ? `Pozostała izolacja: ${hD - recessedDepth} mm + hₑ𝒻=${hef} mm`
-              : `${hD} mm + klej ${adhesiveThickness} mm + hₑ𝒻=${hef} mm`
-            : undefined,
-        });
-      }
+      if (!available) return;
+
+      suggestions.push({
+        ...model,
+        laRecommended: available,  // ✅ Show the total product length to select
+        hef: hef,
+        totalLength: available,
+        priority: model.name === 'LXK 10 H' ? 100 : (model.hasMetalPin ? 10 : 5),
+        finalRequired: finalRequired
+      });
     });
 
-    recommendations.sort((a, b) => b.priority - a.priority || a.laRecommended - b.laRecommended);
+    // Sort by priority, then by length
+    suggestions.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return a.totalLength - b.totalLength;
+    });
 
-    setRecommendations(recommendations);
-    setErrors(recommendations.length === 0 ? { global: 'Brak pasujących łączników dla podanych parametrów.' } : {});
+    setRecommendations(suggestions);
+    setErrors(suggestions.length === 0 ? { global: 'Brak pasujących łączników dla podanych parametrów.' } : {});
 
-    if (recommendations.length > 0) {
-      sendEmail(recommendations);
+    if (suggestions.length > 0) {
+      sendEmail(suggestions);
     }
 
     setStep(prev => prev + 1);
@@ -266,29 +363,26 @@ function App() {
 
     if (error) {
       return (
-        <Box
-          sx={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 40, height: 40, borderRadius: '50%',
-            backgroundColor: 'error.main', color: 'white', fontSize: '1.2rem',
-            transition: 'all 0.3s ease', boxShadow: '0 0 0 3px rgba(244, 67, 54, 0.3)',
-          }}
-        >
+        <Box sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 40, height: 40, borderRadius: '50%',
+          backgroundColor: 'error.main', color: 'white',
+          boxShadow: '0 0 0 3px rgba(244, 67, 54, 0.3)',
+        }}>
           {stepIconsList[iconIndex]}
         </Box>
       );
     }
 
     return (
-      <Box
-        sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 40, height: 40, borderRadius: '50%',
-          backgroundColor: active ? 'primary.main' : completed ? 'primary.main' : 'grey.300',
-          color: active || completed ? 'white' : 'grey.600', fontSize: '1.2rem',
-          transition: 'all 0.3s ease', boxShadow: active ? '0 0 0 3px rgba(221, 0, 0, 0.3)' : 'none',
-        }}
-      >
+      <Box sx={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 40, height: 40, borderRadius: '50%',
+        backgroundColor: active ? 'primary.main' : completed ? 'primary.main' : 'grey.300',
+        color: active || completed ? 'white' : 'grey.600',
+        boxShadow: active ? '0 0 0 3px rgba(221, 0, 0, 0.3)' : 'none',
+        transition: 'all 0.3s ease',
+      }}>
         {stepIconsList[iconIndex]}
       </Box>
     );
@@ -307,38 +401,45 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography variant="h4" align="center" sx={{ fontWeight: 300, letterSpacing: '1.5px', my: 3, fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }} className="app-title">
-          Konfigurator Łączników ETICS
+        <Typography variant="h4" align="center" sx={{ fontWeight: 300, letterSpacing: '1.5px', my: 3, fontSize: { xs: '1.8rem', sm: '2.2rem' } }} className="app-title">
+          Konfigurator łączników STARFIX
         </Typography>
-        {!emailSubmitted ? (
+
+        {!disclaimerAccepted ? (
+          <DisclaimerStep onAccept={() => setDisclaimerAccepted(true)} />
+        ) : !emailSubmitted ? (
           <EmailStep setEmail={setEmail} nextStep={() => setEmailSubmitted(true)} />
         ) : (
           <>
             <MuiStepper activeStep={step} alternativeLabel sx={{ mb: 4, overflow: 'auto' }} className="stepper-container">
               {stepsConfig.map((config, index) => (
-                <Step key={config.label} completed={step > index} sx={{ minWidth: { xs: 'auto', sm: 'auto' } }}>
+                <Step key={config.label} completed={step > index}>
                   <StepLabel
                     slots={{ stepIcon: CustomStepIcon }}
                     onClick={() => goToStep(index)}
                     error={!!errors[Object.keys(formData)[index]]}
                     StepIconProps={{ error: !!errors[Object.keys(formData)[index]] }}
-                    sx={{ cursor: 'pointer', fontSize: { xs: '0.75rem', sm: '0.9rem' }, '& .MuiStepLabel-label': { fontSize: { xs: '0.75rem', sm: '0.9rem' }, fontWeight: 500 } }}
+                    sx={{ cursor: 'pointer', '& .MuiStepLabel-label': { fontSize: { xs: '0.75rem', sm: '0.9rem' }, fontWeight: 500 } }}
                   >
                     {config.label}
                   </StepLabel>
                 </Step>
               ))}
             </MuiStepper>
-            <Box sx={{ mt: 4, p: { xs: 2, sm: 3 }, bgcolor: 'background.paper', color: 'text.primary', borderRadius: 2, boxShadow: '0px 4px 20px rgba(0,0,0,0.05)' }} className="main-content-box">
-              <Typography variant="h5" component="h2" gutterBottom align="center">{stepsConfig[step].title}</Typography>
-              <Box sx={{ p: 2, borderRadius: 1 }}>{stepComponents[step]}</Box>
+
+            <Box sx={{ mt: 4, p: { xs: 2, sm: 3 }, bgcolor: 'background.paper', borderRadius: 2, boxShadow: '0px 4px 20px rgba(0,0,0,0.05)' }} className="main-content-box">
+              <Typography variant="h5" component="h2" gutterBottom align="center">
+                {stepsConfig[step].title}
+              </Typography>
+              <Box sx={{ p: 2 }}>{stepComponents[step]}</Box>
             </Box>
           </>
         )}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }} className="dark-mode-container">
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
           <FormControlLabel
-            control={<Switch checked={themeMode === 'dark'} onChange={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')} />}
-            label={themeMode === 'light' ? 'Tryb Ciemny' : 'Tryb Jasny'}
+            control={<Switch checked={themeMode === 'dark'} onChange={() => setThemeMode(prev => prev === 'light' ? 'dark' : 'light')} />}
+            label={themeMode === 'light' ? 'Tryb ciemny' : 'Tryb jasny'}
           />
         </Box>
       </Container>
