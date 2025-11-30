@@ -1,16 +1,19 @@
-import React from 'react';
+// src/Steps.js
+import React, { useState, useEffect } from 'react';
 import {
   Box, Button, Typography, FormControl, InputLabel, Select, MenuItem,
   Slider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  Link as MuiLink, Alert, Switch, FormControlLabel, useMediaQuery
+  Link as MuiLink, Alert, Switch, FormControlLabel, useMediaQuery, Modal, IconButton
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PrintIcon from '@mui/icons-material/Print';
+import CloseIcon from '@mui/icons-material/Close';
 import { substrates, insulationTypes } from './data';
 import companyLogo from './logo.png';
+
 
 export function Step0(props) {
   const { substrate, setSubstrate, errors, nextStep } = props;
@@ -62,19 +65,17 @@ export function Step1(props) {
 
 export function Step2(props) {
   const { hD, setHD, errors, nextStep, prevStep } = props;
-  const theme = useTheme(); // Get the theme for breakpoint values
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // Check if screen is small
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleChange = (event, value) => setHD(value);
 
-  // Define two versions of the marks
   const desktopMarks = [
     { value: 50, label: '50mm' }, { value: 100, label: '100mm' }, { value: 150, label: '150mm' },
     { value: 200, label: '200mm' }, { value: 250, label: '250mm' }, { value: 300, label: '300mm' },
     { value: 350, label: '350mm' }, { value: 400, label: '400mm' },
   ];
 
-  // For mobile, we only show the tick mark, not the label, to prevent overlap
   const mobileMarks = [
     { value: 50 }, { value: 100 }, { value: 150 }, { value: 200 }, { value: 250 },
     { value: 300 }, { value: 350 }, { value: 400 },
@@ -90,7 +91,7 @@ export function Step2(props) {
         min={10}
         max={400}
         step={10}
-        marks={isSmallScreen ? mobileMarks : desktopMarks} // Use the correct marks for the screen size
+        marks={isSmallScreen ? mobileMarks : desktopMarks}
       />
       {errors.hD && <Typography color="error" variant="caption">{errors.hD}</Typography>}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mt: 2 }}>
@@ -101,7 +102,6 @@ export function Step2(props) {
   );
 }
 
-// === UPDATED: StepAdhesive is now responsive ===
 export function StepAdhesive(props) {
   const { adhesiveThickness, setAdhesiveThickness, errors, prevStep, onNext } = props;
 
@@ -183,6 +183,8 @@ export function StepRecessedDepth(props) {
 
 export function Step4(props) {
   const { recommendations, prevStep, setStep, substrate, insulationType, hD, adhesiveThickness, recessedDepth, errors, email } = props;
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const substrateLabel = substrates.find((s) => s.value === substrate)?.label;
   const insulationTypeLabel = insulationTypes.find((i) => i.value === insulationType)?.label;
   const handleStartOver = () => setStep(0);
@@ -194,6 +196,22 @@ export function Step4(props) {
     { name: 'Grubość warstwy kleju i tynku', value: `${adhesiveThickness} mm` },
     { name: 'Głębokość zagłębienia', value: recessedDepth === 0 ? 'Brak (montaż na płasko)' : `${recessedDepth} mm` },
   ];
+
+  useEffect(() => {
+    recommendations.forEach((r, i) => {
+      console.log(`%c → #${i + 1} ${r.name}`, 'color: yellow', {
+        image: r.image,
+        hasImage: !!r.image,
+        laRecommended: r.laRecommended,
+        pdfLink: r.pdfLink
+      });
+    });
+  }, [recommendations]);
+
+  const openModal = (rec) => {
+    setSelectedImage({ image: rec.image, alt: rec.imageAlt, name: rec.name });
+    setModalOpen(true);
+  };
 
   return (
     <Box>
@@ -227,17 +245,49 @@ export function Step4(props) {
               <TableBody>
                 {recommendations.map((rec) => (
                   <TableRow key={rec.name}>
-                    <TableCell sx={{ textAlign: 'left', fontSize: { xs: '0.75rem', sm: '1rem' } }}>{rec.name} {rec.laRecommended} mm</TableCell>
+                    <TableCell sx={{ textAlign: 'left', fontSize: { xs: '0.75rem', sm: '1rem' } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {rec.image ? (
+                          <Box
+                            component="img"
+                            src={rec.image}
+                            alt={rec.imageAlt || rec.name}
+                            onClick={() => openModal(rec)}
+                            sx={{
+                              width: 64,
+                              height: 64,
+                              objectFit: 'cover',
+                              borderRadius: 2,
+                              cursor: 'pointer',
+                              border: rec.name === 'LXK 10 H' ? '3px solid #dd0000' : '2px solid #e0e0e0',
+                              transition: 'all 0.2s',
+                              '&:hover': { opacity: 0.9, transform: 'scale(1.05)' }
+                            }}
+                          />
+                        ) : (
+                          <Typography color="error" variant="caption">Brak zdjęcia</Typography>
+                        )}
+                        <Box>
+                          <Typography fontWeight="bold" color={rec.name === 'LXK 10 H' ? 'primary' : 'inherit'}>
+                            {rec.name} {rec.laRecommended} mm
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', md: 'block' } }}>
+                            {rec.material}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
                     <TableCell sx={{ textAlign: 'left', fontSize: { xs: '0.75rem', sm: '1rem' }, display: { xs: 'none', md: 'table-cell' } }}>{rec.material}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>
-                      {rec.pdfLink ? (
-                        <MuiLink href={rec.pdfLink} target="_blank" rel="noopener noreferrer" sx={{ color: 'primary.main', display: 'inline-flex', alignItems: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                          <PictureAsPdfIcon sx={{ fontSize: 18, mr: 0.5 }} />
-                          <span sx={{ fontSize: { xs: '0.65rem', sm: '0.875rem' } }}>PDF</span>
-                        </MuiLink>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">—</Typography>
-                      )}
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {rec.pdfLink && (
+                          <MuiLink href={rec.pdfLink} target="_blank" rel="noopener noreferrer" sx={{ color: 'primary.main', display: 'inline-flex', alignItems: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                            <PictureAsPdfIcon sx={{ fontSize: 18, mr: 0.5 }} />
+                            <span sx={{ fontSize: { xs: '0.65rem', sm: '0.875rem' } }}>PDF</span>
+                          </MuiLink>
+                        )}
+
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -255,6 +305,57 @@ export function Step4(props) {
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={prevStep} sx={{ width: { xs: '100%', sm: 'auto' } }}>Wstecz</Button>
         <Button variant="outlined" onClick={handleStartOver} sx={{ width: { xs: '100%', sm: 'auto' } }}>Zacznij od nowa</Button>
       </Box>
+      {/* Modal for selected image display */}
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        aria-labelledby="modal-image-title"
+        aria-describedby="modal-image-description"
+        closeAfterTransition
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2,
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            outline: 'none',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 2,
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            borderRadius: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <IconButton
+            aria-label="close"
+            onClick={() => setModalOpen(false)}
+            sx={{ position: 'absolute', top: 8, right: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          {selectedImage && (
+            <>
+              <Typography id="modal-image-title" variant="h6" sx={{ mb: 1 }}>
+                {selectedImage.name}
+              </Typography>
+              <Box
+                component="img"
+                src={selectedImage.image}
+                alt={selectedImage.alt || selectedImage.name}
+                sx={{ maxWidth: '80vw', maxHeight: '80vh', borderRadius: 1 }}
+              />
+            </>
+          )}
+        </Box>
+      </Modal>
     </Box>
   );
 }
