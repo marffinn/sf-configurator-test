@@ -241,79 +241,13 @@ function App() {
     const { substrate, insulationType, hD, adhesiveThickness, recessedDepth } = formData;
     const isRecessed = recessedDepth > 0;
 
-<<<<<<< HEAD
-    // ───── VALIDATION ─────
-    if (isRecessed && recessedDepth >= hD) {
-      setErrors({ global: 'Głębokość zaślepki nie może być większa lub równa grubości izolacji!' });
-      setRecommendations([]);
-      return;
-    }
-    if (isRecessed && hD - recessedDepth < 20) {
-      setErrors({ global: 'Pozostała grubość izolacji musi wynosić min. 20 mm!' });
-=======
     // Validation matching HTML version
     if (isRecessed && recessedDepth >= hD) {
       setErrors({ global: 'Zaślepka nie może być dłuższa niż izolacja!' });
->>>>>>> f7c5382dbadc7f190f0e289ea20a935abdb2cd4a
       setRecommendations([]);
       return;
     }
 
-<<<<<<< HEAD
-    const validModels = models
-      .filter(m => m.categories.includes(substrate))
-      .filter(m => insulationType !== 'MW' || m.hasMetalPin);
-
-    const recommendations = [];
-
-    validModels.forEach(model => {
-      const hef = model.hef[substrate];
-      if (!hef) return;
-
-      let requiredLength;
-
-      if (model.calculateRequired) {
-        requiredLength = model.calculateRequired({
-          hD,
-          adhesiveThickness,
-          recessedDepth,
-          isRecessed,
-        });
-        if (requiredLength === null) return;
-      } else {
-        requiredLength = hD + adhesiveThickness - recessedDepth;
-      }
-
-      const total = requiredLength + hef;
-      const suggested = model.availableLengths
-        .filter(l => l >= total)
-        .sort((a, b) => a - b)[0];
-
-      if (suggested) {
-        recommendations.push({
-          name: model.name,
-          laRecommended: suggested,
-          material: model.material,
-          pdfLink: model.pdfLink,
-          priority: model.name === 'LXK 10 H' ? 1 : 0,
-          calculationNote: model.name === 'LXK 10 H'
-            ? isRecessed
-              ? `Pozostała izolacja: ${hD - recessedDepth} mm + hₑ𝒻=${hef} mm`
-              : `${hD} mm + klej ${adhesiveThickness} mm + hₑ𝒻=${hef} mm`
-            : undefined,
-        });
-      }
-    });
-
-    // Sort: LXK 10 H first when valid, then shortest length
-    recommendations.sort((a, b) => b.priority - a.priority || a.laRecommended - b.laRecommended);
-
-    // This forces re-render immediately
-    setRecommendations(recommendations);
-    setErrors(recommendations.length === 0 ? { global: 'Brak pasujących łączników dla podanych parametrów.' } : {});
-
-    // CRITICAL: go to results step
-=======
     if (isRecessed && (hD - recessedDepth) < 20) {
       setErrors({ global: 'Zaślepka musi być co najmniej 20 mm krótsza od izolacji!' });
       setRecommendations([]);
@@ -386,7 +320,6 @@ function App() {
       sendEmail(suggestions);
     }
 
->>>>>>> f7c5382dbadc7f190f0e289ea20a935abdb2cd4a
     setStep(prev => prev + 1);
   };
 
