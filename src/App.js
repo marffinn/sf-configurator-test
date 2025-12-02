@@ -1,4 +1,4 @@
-// src/App.js – PERFECTLY MATCHED TO HTML VERSION
+// src/App.js
 
 import React, { useState } from 'react';
 import emailjs from 'emailjs-com';
@@ -236,12 +236,10 @@ function App() {
       .catch(err => console.error('EmailJS error:', err));
   };
 
-  // ✅ EXACT LOGIC FROM HTML VERSION (main.js)
   const calculateLa = () => {
     const { substrate, insulationType, hD, adhesiveThickness, recessedDepth } = formData;
     const isRecessed = recessedDepth > 0;
 
-    // Validation matching HTML version
     if (isRecessed && recessedDepth >= hD) {
       setErrors({ global: 'Zaślepka nie może być dłuższa niż izolacja!' });
       setRecommendations([]);
@@ -260,17 +258,12 @@ function App() {
     validModels.forEach(model => {
       const hef = model.hef[substrate];
 
-      // Skip if hef is undefined or 0
       if (hef === undefined || hef === 0) return;
-
-      // Skip non-metal-pin models for mineral wool
       if (insulationType === 'MW' && !model.hasMetalPin) return;
 
       let required;
 
-      // ✅ EXACT LOGIC FROM data.js
       if (typeof model.calculateRequired === 'function') {
-        // LXK 10 H uses custom function
         required = model.calculateRequired({
           grubIzolacji: hD,
           grubKlej: adhesiveThickness,
@@ -280,8 +273,6 @@ function App() {
 
         if (required === null) return;
       } else {
-        // ✅ STANDARD MODELS: EXACT FORMULA FROM main.js
-        // required = grubIzolacji + grubKlej - grubZaslepka
         required = hD + adhesiveThickness - recessedDepth;
       }
 
@@ -290,7 +281,6 @@ function App() {
 
       if (finalRequired <= 0) return;
 
-      // Find smallest available length that fits
       const available = model.availableLengths
         .filter(l => l >= finalRequired)
         .sort((a, b) => a - b)[0];
@@ -299,7 +289,7 @@ function App() {
 
       suggestions.push({
         ...model,
-        laRecommended: available,  // ✅ Show the total product length to select
+        laRecommended: available,
         hef: hef,
         totalLength: available,
         priority: model.name === 'LXK 10 H' ? 100 : (model.hasMetalPin ? 10 : 5),
@@ -307,7 +297,6 @@ function App() {
       });
     });
 
-    // Sort by priority, then by length
     suggestions.sort((a, b) => {
       if (b.priority !== a.priority) return b.priority - a.priority;
       return a.totalLength - b.totalLength;
@@ -318,6 +307,29 @@ function App() {
 
     if (suggestions.length > 0) {
       sendEmail(suggestions);
+
+      // === START: WP STATS COMMUNICATION ===
+      // This sends the calculation data to the parent WordPress window
+      try {
+        const substrateLabel = substrates.find(s => s.value === formData.substrate)?.label || formData.substrate;
+        const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label || formData.insulationType;
+
+        const payload = {
+          substrate: substrateLabel,
+          insulation_type: insulationTypeLabel,
+          hD: formData.hD,
+          adhesive_thickness: formData.adhesiveThickness,
+          recessed_depth: formData.recessedDepth,
+          recommendations: suggestions.map(s => ({ name: s.name, length: s.laRecommended })),
+          email: email
+        };
+
+        window.parent.postMessage({ type: 'SF_STATS', payload: payload }, '*');
+        console.log('WP Stats sent', payload);
+      } catch (e) {
+        console.error('Failed to send stats to WP:', e);
+      }
+      // === END: WP STATS COMMUNICATION ===
     }
 
     setStep(prev => prev + 1);
