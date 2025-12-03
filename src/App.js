@@ -315,6 +315,7 @@ function App() {
         const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label || formData.insulationType;
 
         const payload = {
+          source: 'etix', // IDENTIFIER FOR THIS APP
           substrate: substrateLabel,
           insulation_type: insulationTypeLabel,
           hD: formData.hD,
