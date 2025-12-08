@@ -1,5 +1,4 @@
 // src/App.js
-
 import React, { useState } from 'react';
 import emailjs from 'emailjs-com';
 import {
@@ -65,38 +64,19 @@ function DisclaimerStep({ onAccept }) {
       <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: 'primary.main' }}>
         Ważna informacja
       </Typography>
-      <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.75, color: 'text.secondary', fontSize: { xs: '1rem', sm: '1.1rem' } }}>
-
+      <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.75, color: 'text.secondary' }}>
         Konfigurator to narzędzie pozwalające w prosty sposób, teoretycznie dobrać długość i typ łącznika dla podanych parametrów.
         Powstały wynik jest wyłącznie rekomendacją i nie zastępuje projektu technicznego oraz wymagań KOT i ETA dla podanych łączników.
       </Typography>
 
       <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
         <FormControlLabel
-          control={
-            <Checkbox
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              color="primary"
-              size="large"
-            />
-          }
-          label={
-            <Typography sx={{ fontWeight: 500, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
-              Zapoznałem/am sie z powyższym i akceptuję.
-            </Typography>
-          }
+          control={<Checkbox checked={accepted} onChange={(e) => setAccepted(e.target.checked)} color="primary" size="large" />}
+          label={<Typography sx={{ fontWeight: 500 }}>Zapoznałem/am się z powyższym i akceptuję.</Typography>}
         />
       </FormControl>
 
-      <Button
-        variant="contained"
-        size="large"
-        disabled={!accepted}
-        onClick={onAccept}
-        fullWidth
-        sx={{ height: 56, fontSize: '1.15rem', textTransform: 'none' }}
-      >
+      <Button variant="contained" size="large" disabled={!accepted} onClick={onAccept} fullWidth sx={{ height: 56 }}>
         Przejdź dalej
       </Button>
     </Box>
@@ -107,9 +87,7 @@ function EmailStep({ setEmail, nextStep }) {
   const [localEmail, setLocalEmail] = useState('');
   const [error, setError] = useState('');
 
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = () => {
     if (validateEmail(localEmail)) {
@@ -163,191 +141,95 @@ function App() {
   const [errors, setErrors] = useState({});
 
   const updateFormData = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: '' }));
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   const validateStep = (currentStep) => {
     const newErrors = {};
     if (currentStep === 0 && !formData.substrate) newErrors.substrate = 'Wybierz rodzaj podłoża';
     if (currentStep === 1 && !formData.insulationType) newErrors.insulationType = 'Wybierz typ izolacji';
-    if (currentStep === 2 && (formData.recessedDepth < 0 || formData.recessedDepth > 160)) newErrors.recessedDepth = 'Głębokość montażu zagłębionego musi być między 0 a 160 mm';
-    if (currentStep === 3 && (formData.hD < 10 || formData.hD > 400)) newErrors.hD = 'Grubość izolacji musi być między 10 a 400 mm';
-    if (currentStep === 4 && (formData.adhesiveThickness < 10 || formData.adhesiveThickness > 50)) newErrors.adhesiveThickness = 'Grubość warstwy kleju musi być między 10 a 50 mm';
+    if (currentStep === 2 && (formData.recessedDepth < 0 || formData.recessedDepth > 160))
+      newErrors.recessedDepth = 'Głębokość montażu zagłębionego musi być między 0 a 160 mm';
+    if (currentStep === 3 && (formData.hD < 10 || formData.hD > 400))
+      newErrors.hD = 'Grubość izolacji musi być między 10 a 400 mm';
+    if (currentStep === 4 && (formData.adhesiveThickness < 0 || formData.adhesiveThickness > 50))
+      newErrors.adhesiveThickness = 'Grubość warstwy kleju musi być między 0 a 50 mm';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const sendEmail = (recommendations) => {
-    const substrateLabel = substrates.find(s => s.value === formData.substrate)?.label || '';
-    const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label || '';
-
-    const recommendationsHtml = `
-    <table style="width:100%; border-collapse:collapse; margin:20px 0; font-size:14px;" border="1" cellpadding="10">
-      <thead style="background:#f0f0f0;">
-        <tr>
-          <th>Nazwa</th>
-          <th>Zalecana długość (mm)</th>
-          <th>Materiał</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${recommendations.map(rec => `
-          <tr ${rec.name === 'LXK 10 H' ? 'style="background:#fff8e1; font-weight:bold;"' : ''}>
-            <td style="color:${rec.name === 'LXK 10 H' ? '#dd0000' : 'inherit'};">
-              ${rec.name} ${rec.name === 'LXK 10 H' ? ' ← rekomendowany' : ''}
-            </td>
-            <td style="text-align:center; font-weight:bold;">${rec.laRecommended}</td>
-            <td>${rec.material}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-
-    const templateParams = {
+  const sendEmail = (list) => {
+    const params = {
       to_email: email,
-      client_email: email,
-      substrate: substrateLabel,
-      insulationType: insulationTypeLabel,
-      insulationThickness: formData.hD,
-      adhesiveThickness: formData.adhesiveThickness,
-      recessedDepth: formData.recessedDepth === 0 ? 'Brak' : `${formData.recessedDepth} mm`,
-
-      disclaimer_html: `
-      <div style="background:#fff8e1; border-left:5px solid #ff8f00; padding:15px; margin:20px 0; font-size:14px; line-height:1.6;">
-        <strong>Potwierdzenie zapoznania się z warunkami korzystania</strong><br><br>
-        Użytkownik potwierdził, że zapoznał się z następującymi warunkami: <br>
-        • Konfigurator ma charakter wyłącznie orientacyjny i teoretyczny<br>
-        • Wynik jest jedynie rekomendacją i <strong>nie zastępuje projektu technicznego</strong><br>
-        • Wymagana jest weryfikacja przez specjalistę zgodnie z KOT i ETA
-      </div>
-    `,
-
-      recommendations_html: recommendationsHtml,
-
-      timestamp: new Date().toLocaleString('pl-PL', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-      })
+      substrate: substrates.find(s => s.value === formData.substrate)?.label || '',
+      insulation: insulationTypes.find(i => i.value === formData.insulationType)?.label || '',
+      hD: formData.hD,
+      adhesive_thickness: formData.adhesiveThickness,
+      recessed_depth: formData.recessedDepth,
+      recommendations: list.map(r => `${r.name} – ${r.laRecommended} mm`).join('\n'),
     };
 
-    emailjs.send('service_wl8dg9a', 'template_jgv00kz', templateParams, 'ndfOyBTYvqBjOwsI_')
-      .then(() => console.log('Email wysłany!'))
-      .catch(err => console.error('EmailJS error:', err));
+    emailjs.send('SERVICE_ID', 'TEMPLATE_ID', params, 'USER_ID')
+      .then(() => console.log('Email wysłany'))
+      .catch(err => console.error('Błąd emailjs:', err));
   };
 
   const calculateLa = () => {
-    const { substrate, insulationType, hD, adhesiveThickness, recessedDepth } = formData;
+    const { substrate, hD, adhesiveThickness, recessedDepth } = formData;
     const isRecessed = recessedDepth > 0;
 
-    if (isRecessed && recessedDepth >= hD) {
-      setErrors({ global: 'Zaślepka nie może być dłuższa niż izolacja!' });
-      setRecommendations([]);
-      return;
-    }
+    const suggestions = models
+      .filter(m => m.categories.includes(substrate))
+      .map(model => {
+        const hef = model.hef[substrate] || 0;
+        let required;
 
-    if (isRecessed && (hD - recessedDepth) < 20) {
-      setErrors({ global: 'Zaślepka musi być co najmniej 20 mm krótsza od izolacji!' });
-      setRecommendations([]);
-      return;
-    }
+        if (model.name === 'LXK 10 H') {
+          if (!isRecessed || hD < 120) return null;
+          const remaining = hD - recessedDepth;
+          if (remaining < 100) return null;
+          required = remaining;
+        } else {
+          required = isRecessed ? hD - recessedDepth + hef : hD + adhesiveThickness + hef;
+        }
 
-    const validModels = models.filter(m => m.categories.includes(substrate));
-    const suggestions = [];
-
-    validModels.forEach(model => {
-      const hef = model.hef[substrate];
-
-      if (hef === undefined || hef === 0) return;
-      if (insulationType === 'MW' && !model.hasMetalPin) return;
-
-      let required;
-
-      if (typeof model.calculateRequired === 'function') {
-        required = model.calculateRequired({
-          grubIzolacji: hD,
-          grubKlej: adhesiveThickness,
-          grubZaslepka: recessedDepth,
-          isRecessed: isRecessed
-        });
-
-        if (required === null) return;
-      } else {
-        required = hD + adhesiveThickness - recessedDepth;
-      }
-
-      const offset = model.offset || 0;
-      const finalRequired = required + offset + hef;
-
-      if (finalRequired <= 0) return;
-
-      const available = model.availableLengths
-        .filter(l => l >= finalRequired)
-        .sort((a, b) => a - b)[0];
-
-      if (!available) return;
-
-      suggestions.push({
-        ...model,
-        laRecommended: available,
-        hef: hef,
-        totalLength: available,
-        priority: model.name === 'LXK 10 H' ? 100 : (model.hasMetalPin ? 10 : 5),
-        finalRequired: finalRequired
-      });
-    });
-
-    suggestions.sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority;
-      return a.totalLength - b.totalLength;
-    });
+        const available = model.availableLengths.find(l => l >= required);
+        return available ? { ...model, laRequired: required, laRecommended: available } : null;
+      })
+      .filter(Boolean);
 
     setRecommendations(suggestions);
-    setErrors(suggestions.length === 0 ? { global: 'Brak pasujących łączników dla podanych parametrów.' } : {});
 
-    if (suggestions.length > 0) {
-      sendEmail(suggestions);
-
-      // === START: WP STATS COMMUNICATION ===
-      // This sends the calculation data to the parent WordPress window
-      try {
-        const substrateLabel = substrates.find(s => s.value === formData.substrate)?.label || formData.substrate;
-        const insulationTypeLabel = insulationTypes.find(i => i.value === formData.insulationType)?.label || formData.insulationType;
-
-        const payload = {
-          source: 'etix', // IDENTIFIER FOR THIS APP
-          substrate: substrateLabel,
-          insulation_type: insulationTypeLabel,
-          hD: formData.hD,
-          adhesive_thickness: formData.adhesiveThickness,
-          recessed_depth: formData.recessedDepth,
+    // WP Stats
+    try {
+      window.parent.postMessage({
+        type: 'SF_STATS',
+        payload: {
+          source: 'etix',
+          substrate: substrates.find(s => s.value === substrate)?.label || '',
+          insulation_type: insulationTypes.find(i => i.value === formData.insulationType)?.label || '',
+          hD, adhesive_thickness: adhesiveThickness, recessed_depth: recessedDepth,
           recommendations: suggestions.map(s => ({ name: s.name, length: s.laRecommended })),
-          email: email
-        };
+          email
+        }
+      }, '*');
+    } catch (e) { console.error(e); }
 
-        window.parent.postMessage({ type: 'SF_STATS', payload: payload }, '*');
-        console.log('WP Stats sent', payload);
-      } catch (e) {
-        console.error('Failed to send stats to WP:', e);
-      }
-      // === END: WP STATS COMMUNICATION ===
-    }
+    if (email && suggestions.length > 0) sendEmail(suggestions);
 
     setStep(prev => prev + 1);
   };
 
-  const nextStep = () => { if (validateStep(step)) setStep(prev => prev + 1); };
-  const prevStep = () => { setStep(prev => prev - 1); };
-  const goToStep = (index) => {
-    if (index > step) {
-      let isValid = true;
-      for (let i = step; i < index; i++) { if (!validateStep(i)) { isValid = false; break; } }
-      if (isValid) setStep(index);
-    } else {
-      setStep(index);
+  const nextStep = () => { if (validateStep(step)) setStep(s => s + 1); };
+  const prevStep = () => setStep(s => s - 1);
+  const goToStep = (idx) => {
+    if (idx < step || (idx > step && [...Array(idx - step).keys()].every(i => validateStep(step + i)))) {
+      setStep(idx);
     }
   };
+
   const handleStartOver = () => {
     setFormData({ substrate: 'A', insulationType: 'EPS', hD: 80, adhesiveThickness: 10, recessedDepth: 0 });
     setRecommendations([]);
@@ -361,59 +243,42 @@ function App() {
     { label: 'Montaż z zaślepką', title: 'Czy stosujesz montaż zagłębiony z zaślepką?' },
     { label: 'Grubość izolacji', title: 'Podaj grubość izolacji' },
     { label: 'Grubość warstwy kleju i tynku', title: 'Grubość warstwy kleju i tynku' },
-    { label: 'Rekomendacja dla', title: 'Rekomendacja dla Twojej konfiguracji' },
+    { label: 'Rekomendacja', title: 'Rekomendacja dla Twojej konfiguracji' },
   ];
 
-  const stepIconsList = [
-    <FoundationIcon key="foundation" />, <LayersIcon key="layers" />, <SettingsIcon key="settings" />,
-    <HeightIcon key="height" />, <BuildIcon key="build" />, <CheckCircleIcon key="check" />,
+  const icons = [
+    <FoundationIcon />, <LayersIcon />, <SettingsIcon />,
+    <HeightIcon />, <BuildIcon />, <CheckCircleIcon />
   ];
 
-  function CustomStepIcon(props) {
-    const { active, completed, error } = props;
-    const iconIndex = props.icon - 1;
-
-    if (error) {
-      return (
-        <Box sx={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 40, height: 40, borderRadius: '50%',
-          backgroundColor: 'error.main', color: 'white',
-          boxShadow: '0 0 0 3px rgba(244, 67, 54, 0.3)',
-        }}>
-          {stepIconsList[iconIndex]}
-        </Box>
-      );
-    }
-
+  const CustomStepIcon = ({ active, completed }) => {
+    const idx = (active || completed) ? step : step - 1;
     return (
       <Box sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: 40, height: 40, borderRadius: '50%',
-        backgroundColor: active ? 'primary.main' : completed ? 'primary.main' : 'grey.300',
+        width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: active || completed ? 'primary.main' : 'grey.300',
         color: active || completed ? 'white' : 'grey.600',
-        boxShadow: active ? '0 0 0 3px rgba(221, 0, 0, 0.3)' : 'none',
-        transition: 'all 0.3s ease',
+        boxShadow: active ? '0 0 0 3px rgba(221,0,0,0.3)' : 'none',
       }}>
-        {stepIconsList[iconIndex]}
+        {icons[idx] || icons[icons.length - 1]}
       </Box>
     );
-  }
+  };
 
   const stepComponents = [
-    <Step0 substrate={formData.substrate} setSubstrate={(v) => updateFormData('substrate', v)} errors={errors} nextStep={nextStep} />,
-    <Step1 insulationType={formData.insulationType} setInsulationType={(v) => updateFormData('insulationType', v)} errors={errors} nextStep={nextStep} prevStep={prevStep} />,
-    <StepRecessedDepth recessedDepth={formData.recessedDepth} setRecessedDepth={(v) => updateFormData('recessedDepth', v)} errors={errors} prevStep={prevStep} buttonText="Dalej" onNext={nextStep} />,
-    <Step2 hD={formData.hD} setHD={(v) => updateFormData('hD', v)} errors={errors} nextStep={nextStep} prevStep={prevStep} />,
-    <StepAdhesive adhesiveThickness={formData.adhesiveThickness} setAdhesiveThickness={(v) => updateFormData('adhesiveThickness', v)} errors={errors} prevStep={prevStep} buttonText="Pokaż rekomendacje" onNext={calculateLa} />,
-    <Step4 recommendations={recommendations} prevStep={prevStep} setStep={setStep} handleStartOver={handleStartOver} {...formData} errors={errors} email={email} />,
+    <Step0 substrate={formData.substrate} setSubstrate={v => updateFormData('substrate', v)} errors={errors} nextStep={nextStep} />,
+    <Step1 insulationType={formData.insulationType} setInsulationType={v => updateFormData('insulationType', v)} errors={errors} nextStep={nextStep} prevStep={prevStep} />,
+    <StepRecessedDepth recessedDepth={formData.recessedDepth} setRecessedDepth={v => updateFormData('recessedDepth', v)} errors={errors} prevStep={prevStep} buttonText="Dalej" onNext={nextStep} />,
+    <Step2 hD={formData.hD} setHD={v => updateFormData('hD', v)} errors={errors} nextStep={nextStep} prevStep={prevStep} />,
+    <StepAdhesive adhesiveThickness={formData.adhesiveThickness} setAdhesiveThickness={v => updateFormData('adhesiveThickness', v)} errors={errors} prevStep={prevStep} buttonText="Pokaż rekomendacje" onNext={calculateLa} />,
+    <Step4 recommendations={recommendations} prevStep={prevStep} handleStartOver={handleStartOver} {...formData} email={email} />,
   ];
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography variant="h4" align="center" sx={{ fontWeight: 300, letterSpacing: '1.5px', my: 3, fontSize: { xs: '1.8rem', sm: '2.2rem' } }} className="app-title">
+        <Typography variant="h4" align="center" className="app-title" sx={{ my: 3, fontWeight: 300 }}>
           Konfigurator łączników STARFIX
         </Typography>
 
@@ -423,26 +288,18 @@ function App() {
           <EmailStep setEmail={setEmail} nextStep={() => setEmailSubmitted(true)} />
         ) : (
           <>
-            <MuiStepper activeStep={step} alternativeLabel sx={{ mb: 4, overflow: 'auto' }} className="stepper-container">
-              {stepsConfig.map((config, index) => (
-                <Step key={config.label} completed={step > index}>
-                  <StepLabel
-                    slots={{ stepIcon: CustomStepIcon }}
-                    onClick={() => goToStep(index)}
-                    error={!!errors[Object.keys(formData)[index]]}
-                    StepIconProps={{ error: !!errors[Object.keys(formData)[index]] }}
-                    sx={{ cursor: 'pointer', '& .MuiStepLabel-label': { fontSize: { xs: '0.75rem', sm: '0.9rem' }, fontWeight: 500 } }}
-                  >
-                    {config.label}
+            <MuiStepper activeStep={step} alternativeLabel sx={{ mb: 4 }} className="stepper-container">
+              {stepsConfig.map((cfg, i) => (
+                <Step key={i} completed={step > i}>
+                  <StepLabel StepIconComponent={CustomStepIcon} onClick={() => goToStep(i)} sx={{ cursor: 'pointer' }}>
+                    {cfg.label}
                   </StepLabel>
                 </Step>
               ))}
             </MuiStepper>
 
-            <Box sx={{ mt: 4, p: { xs: 2, sm: 3 }, bgcolor: 'background.paper', borderRadius: 2, boxShadow: '0px 4px 20px rgba(0,0,0,0.05)' }} className="main-content-box">
-              <Typography variant="h5" component="h2" gutterBottom align="center">
-                {stepsConfig[step].title}
-              </Typography>
+            <Box sx={{ mt: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 3 }} className="main-content-box">
+              <Typography variant="h5" align="center" gutterBottom>{stepsConfig[step].title}</Typography>
               <Box sx={{ p: 2 }}>{stepComponents[step]}</Box>
             </Box>
           </>
@@ -450,7 +307,7 @@ function App() {
 
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
           <FormControlLabel
-            control={<Switch checked={themeMode === 'dark'} onChange={() => setThemeMode(prev => prev === 'light' ? 'dark' : 'light')} />}
+            control={<Switch checked={themeMode === 'dark'} onChange={() => setThemeMode(m => m === 'light' ? 'dark' : 'light')} />}
             label={themeMode === 'light' ? 'Tryb ciemny' : 'Tryb jasny'}
           />
         </Box>
