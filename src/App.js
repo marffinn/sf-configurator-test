@@ -171,7 +171,7 @@ function App() {
       recommendations: list.map(r => `${r.name} – ${r.laRecommended} mm`).join('\n'),
     };
 
-    emailjs.send('SERVICE_ID', 'TEMPLATE_ID', params, 'USER_ID')
+    emailjs.send('service_wl8dg9a', 'template_jgv00kz', params, 'ndfOyBTYvqBjOwsI_')
       .then(() => console.log('Email wysłany'))
       .catch(err => console.error('Błąd emailjs:', err));
   };
