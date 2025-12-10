@@ -264,7 +264,7 @@ export function Step4(props) {
     <Box sx={{ textAlign: 'center' }}>
       <img src={companyLogo} alt="Starfix Logo" className="print-logo" />
 
-      <Typography variant="h6" gutterBottom>Tvoje parametry:</Typography>
+      <Typography variant="h6" gutterBottom>Twoje parametry:</Typography>
       <Typography variant="body1" sx={{ mb: 3 }}>
         Podłoże: <strong>{substrateLabel}</strong><br />
         Izolacja: <strong>{insulationLabel}</strong><br />
