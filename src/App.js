@@ -66,7 +66,10 @@ function DisclaimerStep({ onAccept }) {
       </Typography>
       <Typography variant="body1" sx={{ mb: 4, lineHeight: 1.75, color: 'text.secondary' }}>
         Konfigurator to narzędzie pozwalające w prosty sposób, teoretycznie dobrać długość i typ łącznika dla podanych parametrów.
-        Powstały wynik jest wyłącznie rekomendacją i nie zastępuje projektu technicznego oraz wymagań KOT i ETA dla podanych łączników.
+        Powstały wynik jest wyłącznie rekomendacją i nie zastępuje projektu technicznego oraz wymagań KOT i ETA dla podanych łączników.<br />
+        <br />
+        Ważne: konfigurator działa wyłącznie dla kołków firmy Amex Starfix.
+        Nie zalecamy używania go do doboru kołków innych producentów
       </Typography>
 
       <FormControl component="fieldset" sx={{ width: '100%', mb: 4 }}>
